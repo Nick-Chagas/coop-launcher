@@ -2,13 +2,13 @@
 
 Site de download do Coop Launcher para Windows. O aplicativo organiza jogos com coop local e confere novas versões em `updates.json`.
 
-## Versão 0.5.0
+## Versão 0.5.1
 
 - Biblioteca com cartões equilibrados para Hollow Knight e BattleBlock Theater.
 - Family Coop e jogo original como ações do Hollow Knight.
 - Atalho para adicionar skins e verificação de atualizações.
 
-O download da release inclui apenas o launcher. Cada pessoa precisa ter os jogos instalados. O Family Coop está em beta e não é distribuído neste repositório.
+O download da release inclui apenas o launcher. Cada pessoa precisa ter os jogos instalados. O Family Coop está em beta. A release distribui apenas um patch para quem já tem a versão anterior instalada; não inclui o mod completo.
 
 ## Publicar uma atualização
 
