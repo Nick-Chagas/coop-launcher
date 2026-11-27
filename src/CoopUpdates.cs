@@ -24,7 +24,7 @@ internal sealed class UpdateManifest
 internal static class CoopUpdates
 {
     internal const string LauncherVersion = "0.5.2";
-    private const string ManifestUrl = "https://nick-chagas.github.io/coop-launcher/updates-v2.json";
+    private const string ManifestUrl = "https://raw.githubusercontent.com/Nick-Chagas/coop-launcher/main/updates-v2.json";
 
     internal static UpdateManifest FetchManifest()
     {
