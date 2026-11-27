@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -25,7 +26,7 @@ internal sealed class UpdateManifest
 
 internal static class CoopUpdates
 {
-    internal const string LauncherVersion = "0.6.3";
+    internal const string LauncherVersion = "0.6.4";
     private const string ManifestUrl = "https://nick-chagas.github.io/coop-launcher/updates-v3.json";
 
     internal static UpdateManifest FetchManifest()
@@ -96,13 +97,36 @@ internal static class CoopUpdates
     {
         string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CoopLauncher", "battleblock.mod.xml");
         string checksum = path + ".sha256";
-        if (!File.Exists(path) || !File.Exists(checksum)) return;
-        using (var sha = SHA256.Create())
+        if (File.Exists(path) && File.Exists(checksum) &&
+            FileHash(path).Equals(File.ReadAllText(checksum).Trim(), StringComparison.OrdinalIgnoreCase))
         {
-            string actual = BitConverter.ToString(sha.ComputeHash(File.ReadAllBytes(path))).Replace("-", "");
-            if (!actual.Equals(File.ReadAllText(checksum).Trim(), StringComparison.OrdinalIgnoreCase)) return;
+            BattleBlockMod.LoadPackage(path);
+            if (!IsNewer("1.3.0", BattleBlockMod.PackageVersion)) return;
         }
-        BattleBlockMod.LoadPackage(path);
+        string bundled = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CoopLauncher", "battleblock.bundled.xml");
+        Directory.CreateDirectory(Path.GetDirectoryName(bundled));
+        File.WriteAllBytes(bundled, BundledBytes("BattleBlock-mod.xml", "0F8DD00F034B0904B553FA30DE820B9A13FB7BF1882891293B54DDF455643941"));
+        BattleBlockMod.LoadPackage(bundled);
+    }
+
+    private static byte[] BundledBytes(string resource, string expectedHash)
+    {
+        using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resource))
+        {
+            if (stream == null) throw new InvalidDataException("Mod embutido ausente: " + resource);
+            using (var memory = new MemoryStream())
+            {
+                stream.CopyTo(memory);
+                byte[] bytes = memory.ToArray();
+                using (var sha = SHA256.Create())
+                {
+                    string actual = BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-", "");
+                    if (!actual.Equals(expectedHash, StringComparison.OrdinalIgnoreCase))
+                        throw new InvalidDataException("Mod embutido não corresponde ao SHA-256 esperado.");
+                }
+                return bytes;
+            }
+        }
     }
 
     internal static void UpdateBattle(UpdateManifest manifest, string exe)
@@ -190,14 +214,27 @@ internal static class CoopUpdates
 
     internal static void InstallFamilyFull(UpdateManifest manifest, string gameRoot)
     {
+        string downloaded = DownloadVerified(manifest.familyFullUrl, manifest.familyFullSha256);
+        try { InstallFamilyBytes(File.ReadAllBytes(downloaded), manifest.familyFullSha256, gameRoot); }
+        finally { File.Delete(downloaded); }
+    }
+
+    internal static void InstallFamilyBundled(string gameRoot)
+    {
+        const string hash = "8A36B2AF722DA4DCCA30F9031009EC4903C57B66FE6C99E7AC3EDA4C7394F8E9";
+        InstallFamilyBytes(BundledBytes("FamilyCoop.dll", hash), hash, gameRoot);
+    }
+
+    private static void InstallFamilyBytes(byte[] bytes, string expectedHash, string gameRoot)
+    {
         if (Process.GetProcessesByName("hollow_knight").Length != 0)
             throw new InvalidOperationException("Feche o Hollow Knight antes de instalar o mod.");
         string managed = Path.Combine(gameRoot, "hollow_knight_Data", "Managed");
         string profile = Path.Combine(gameRoot, "CoopProfiles", "family", "HollowKnightLocal8.dll");
         string active = Path.Combine(managed, "Mods", "HollowKnightLocal8", "HollowKnightLocal8.dll");
-        if (!Directory.Exists(managed) || (!File.Exists(profile) && !File.Exists(active)))
-            throw new InvalidOperationException("Instale primeiro o Modding API do Hollow Knight e localize o mod existente.");
-        string downloaded = DownloadVerified(manifest.familyFullUrl, manifest.familyFullSha256);
+        bool apiInstalled = File.Exists(Path.Combine(managed, "MMHOOK_Assembly-CSharp.dll"));
+        if (!Directory.Exists(managed) || (!apiInstalled && !File.Exists(profile) && !File.Exists(active)))
+            throw new InvalidOperationException("O Hollow Knight precisa do Modding API compatível antes de instalar o Family Coop.");
         string backupProfile = profile + ".previous";
         string backupActive = active + ".previous";
         bool hadProfile = File.Exists(profile), hadActive = File.Exists(active);
@@ -206,12 +243,12 @@ internal static class CoopUpdates
             Directory.CreateDirectory(Path.GetDirectoryName(profile));
             if (hadProfile) File.Copy(profile, backupProfile, true);
             if (hadActive) File.Copy(active, backupActive, true);
-            File.Copy(downloaded, profile, true);
+            File.WriteAllBytes(profile, bytes);
             Directory.CreateDirectory(Path.GetDirectoryName(active));
-            File.Copy(downloaded, active, true);
-            if (!FileHash(profile).Equals(manifest.familyFullSha256, StringComparison.OrdinalIgnoreCase) ||
-                !FileHash(active).Equals(manifest.familyFullSha256, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidDataException("O mod copiado não corresponde ao download.");
+            File.WriteAllBytes(active, bytes);
+            if (!FileHash(profile).Equals(expectedHash, StringComparison.OrdinalIgnoreCase) ||
+                !FileHash(active).Equals(expectedHash, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidDataException("O mod copiado não corresponde ao pacote.");
         }
         catch
         {
@@ -221,7 +258,6 @@ internal static class CoopUpdates
             else if (!hadActive && File.Exists(active)) File.Delete(active);
             throw;
         }
-        finally { File.Delete(downloaded); }
     }
 
     private static void ApplyFamilyPatch(string patch, string destination)

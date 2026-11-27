@@ -2,8 +2,10 @@
 
 Launcher de coop local para Windows, com BattleBlock Theater e Hollow Knight Family Coop.
 
-## Versão 0.6.3
+## Versão 0.6.4
 
+- O executável inclui o pacote do mod BattleBlock 1.3.0 e a DLL Family Coop 0.2.1. A primeira instalação desses mods funciona sem baixar o arquivo do mod.
+- O botão Atualizar continua buscando versões futuras no servidor.
 - Detecta o mod BattleBlock instalado mesmo quando o backup antigo não está na pasta; só recupera arquivos quando os hashes originais conferem.
 - O botão de atualização do BattleBlock baixa o pacote mesmo quando a versão do pacote já está em cache.
 - Detecta o mod Hollow Knight na pasta ativa ou no perfil Family Coop e oferece o arquivo completo verificado por SHA-256.

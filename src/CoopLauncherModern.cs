@@ -90,7 +90,7 @@ internal static class CoopLauncherModern
         exploreNav.Click += (s, e) => ShowExplore();
         libraryNav.Click += (s, e) => ShowLibrary();
         Find<Button>("AboutNav").Click += (s, e) => MessageBox.Show(window,
-            "Coop Launcher 0.6.3\n\nAdicione um jogo, instale o mod compatível e use Atualizações para receber novas versões.",
+            "Coop Launcher 0.6.4\n\nAdicione um jogo, instale o mod compatível e use Atualizações para receber novas versões.",
             "Sobre o Coop Launcher", MessageBoxButton.OK, MessageBoxImage.Information);
         addButton.Click += (s, e) => AddToLibrary();
         Find<Button>("EmptyExploreButton").Click += (s, e) => ShowExplore();
@@ -99,10 +99,10 @@ internal static class CoopLauncherModern
         restore.Click += (s, e) => RestoreAction();
         battleOriginalButton.Click += (s, e) => LaunchBattleOriginal();
         hollowAddButton.Click += (s, e) => AddHollowToLibrary();
-        hollowPrimaryButton.Click += (s, e) => LaunchHollow("family");
+        hollowPrimaryButton.Click += (s, e) => HollowPrimaryAction();
         hollowOriginalButton.Click += (s, e) => LaunchHollow("original");
         hollowSkinButton.Click += (s, e) => AddHollowSkin();
-        hollowUpdateButton.Click += (s, e) => CheckUpdates(true, true);
+        hollowUpdateButton.Click += (s, e) => HollowModAction();
         battleUpdateButton.Click += (s, e) => CheckUpdates(true, false, true);
         Find<Button>("HollowChooseButton").Click += (s, e) => ChooseHollow();
         updatesButton.Click += (s, e) => CheckUpdates(true);
@@ -347,13 +347,35 @@ internal static class CoopLauncherModern
         hollowLibraryGame.Visibility = hollowAdded ? Visibility.Visible : Visibility.Collapsed;
         hollowAddButton.Content = hollowAdded ? "Abrir" : "＋  Adicionar";
         hollowGamePath.Text = string.IsNullOrEmpty(hollowExe) ? "Jogo ainda não escolhido" : hollowExe;
-        hollowPrimaryButton.Content = familyVersion != "0.0.0" ? "▶  Jogar com Family Coop" : "Family Coop indisponível";
-        hollowPrimaryButton.IsEnabled = familyVersion != "0.0.0" && (ready || HollowActiveModPresent());
+        bool playable = familyVersion != "0.0.0" && (ready || HollowActiveModPresent());
+        hollowPrimaryButton.Content = playable ? "▶  Jogar com Family Coop" : "Instalar Family Coop";
+        hollowPrimaryButton.IsEnabled = gameExists;
+        hollowUpdateButton.Content = modPresent ? "↻  Atualizar Family Coop" : "↓  Instalar mod incluído";
         hollowOriginalButton.IsEnabled = gameExists;
         hollowSkinButton.IsEnabled = ready;
         hollowStatusTitle.Text = modPresent ? "Mod encontrado" : gameExists ? "Jogo original disponível" : "Localize o jogo";
         hollowStatusDetail.Text = ready ? "Family Coop e jogo original disponíveis." : modPresent ? "Mod encontrado. Use Atualizar Family Coop para instalar nossa versão." : gameExists ? "Você já pode jogar sem mod. Family Coop ainda não está instalado." : "Escolha o executável do Hollow Knight.";
         hollowModBadge.Text = modPresent ? (familyVersion == "0.0.0" ? "MOD ENCONTRADO · ATUALIZE" : "MOD INSTALADO · V" + familyVersion) : "MOD DISPONÍVEL";
+    }
+
+    private static void HollowPrimaryAction()
+    {
+        if (!HollowGameExists()) { ChooseHollow(); return; }
+        if (CoopUpdates.FamilyVersion(Path.GetDirectoryName(hollowExe)) == "0.0.0" ||
+            (!HollowReady() && !HollowActiveModPresent()))
+        {
+            InstallUpdate(() => CoopUpdates.InstallFamilyBundled(Path.GetDirectoryName(hollowExe)));
+            return;
+        }
+        LaunchHollow("family");
+    }
+
+    private static void HollowModAction()
+    {
+        if (!HollowGameExists()) { ChooseHollow(); return; }
+        if (!HollowModPresent())
+            InstallUpdate(() => CoopUpdates.InstallFamilyBundled(Path.GetDirectoryName(hollowExe)));
+        else CheckUpdates(true, true);
     }
 
     private static void LaunchHollow(string mode)
