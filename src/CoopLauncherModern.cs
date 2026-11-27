@@ -38,6 +38,8 @@ internal static class CoopLauncherModern
     private static TextBlock hollowGamePath;
     private static TextBlock hollowStatusTitle;
     private static TextBlock hollowStatusDetail;
+    private static TextBlock hollowModBadge;
+    private static TextBlock battleModVersion;
     private static string selectedExe;
     private static string hollowExe;
     private static bool added;
@@ -80,11 +82,13 @@ internal static class CoopLauncherModern
         hollowGamePath = Find<TextBlock>("HollowGamePath");
         hollowStatusTitle = Find<TextBlock>("HollowStatusTitle");
         hollowStatusDetail = Find<TextBlock>("HollowStatusDetail");
+        hollowModBadge = Find<TextBlock>("HollowModBadge");
+        battleModVersion = Find<TextBlock>("BattleModVersion");
         LoadArtwork();
         exploreNav.Click += (s, e) => ShowExplore();
         libraryNav.Click += (s, e) => ShowLibrary();
         Find<Button>("AboutNav").Click += (s, e) => MessageBox.Show(window,
-            "Um projeto que vai deixar videogames serem coop local de novo.\n\nExplore os mods criados, adicione jogos à sua biblioteca e instale o patch compatível. Cada jogo precisa de um mod próprio.",
+            "Coop Launcher 0.6.0\n\nAdicione um jogo, instale o mod compatível e use Atualizações para receber novas versões.",
             "Sobre o Coop Launcher", MessageBoxButton.OK, MessageBoxImage.Information);
         addButton.Click += (s, e) => AddToLibrary();
         Find<Button>("EmptyExploreButton").Click += (s, e) => ShowExplore();
@@ -318,6 +322,7 @@ internal static class CoopLauncherModern
         hollowSkinButton.IsEnabled = ready;
         hollowStatusTitle.Text = ready ? "Mod encontrado" : "Configuração necessária";
         hollowStatusDetail.Text = ready ? "Family Coop e jogo original disponíveis." : "Escolha a pasta do Hollow Knight com o Family Coop instalado.";
+        hollowModBadge.Text = ready ? "MOD INSTALADO · V" + CoopUpdates.FamilyVersion() : "MOD DISPONÍVEL";
     }
 
     private static void LaunchHollow(string mode)
@@ -442,13 +447,14 @@ internal static class CoopLauncherModern
         libraryGame.Visibility = added ? Visibility.Visible : Visibility.Collapsed;
         addButton.Content = added ? "Abrir" : "＋  Adicionar";
         gamePath.Text = string.IsNullOrEmpty(selectedExe) ? "Executável ainda não escolhido" : selectedExe;
+        battleModVersion.Text = state == ModState.Installed ? "Mod v" + CoopUpdates.BattleVersion() + " ativo" : "Campanha coop local";
         restore.Visibility = state == ModState.Installed ? Visibility.Visible : Visibility.Collapsed;
         switch (state)
         {
             case ModState.Installed:
                 primary.Content = "▶   Jogar agora";
                 statusTitle.Text = "Pronto para jogar";
-                statusDetail.Text = "Mod ativo. Três jogadores e progresso salvo confirmados.";
+                statusDetail.Text = "Mod v" + CoopUpdates.BattleVersion() + " ativo. Pronto para abrir o jogo.";
                 statusDot.Fill = Brush("#80DCC1");
                 break;
             case ModState.Original:
