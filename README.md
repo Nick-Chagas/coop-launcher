@@ -1,19 +1,20 @@
 # Coop Launcher
 
-Site de download do Coop Launcher para Windows. O aplicativo organiza jogos com coop local e confere novas versões nos manifestos `updates.json` e `updates-v2.json`.
+Launcher de coop local para Windows, com BattleBlock Theater e Hollow Knight Family Coop.
 
-## Versão 0.5.1
+## Versão 0.5.2
 
-- Biblioteca com cartões equilibrados para Hollow Knight e BattleBlock Theater.
-- Family Coop e jogo original como ações do Hollow Knight.
-- Atalho para adicionar skins e botão próprio para atualizar o Family Coop.
+- Reconhece os builds 23591838 e 25916588 do BattleBlock Theater.
+- Corrige a abertura do executável selecionado, inclusive quando o jogo está em outra pasta.
+- Atualiza o mod do BattleBlock por um botão próprio. O pacote de patch é verificado por SHA-256 e o executável original é preservado.
+- Mantém as atualizações do aplicativo e do Hollow Knight Family Coop.
 
-O site oferece o launcher. A release também contém um patch do Family Coop para quem já tem a versão anterior instalada; não inclui o mod completo. Cada pessoa precisa ter os jogos instalados.
+[Baixar o Coop Launcher](https://nick-chagas.github.io/coop-launcher/). Cada pessoa precisa ter o próprio jogo instalado. Este repositório não distribui o executável do jogo.
 
-## Publicar uma atualização
+## Publicar atualizações
 
-1. Publique o launcher e o patch em uma release.
-2. Atualize os URLs e SHA-256 em ambos os manifestos. O manifesto legado `updates.json` não deve oferecer patches ao launcher 0.5.0.
-3. Publique a mudança no site. O launcher 0.5.1 usa `updates-v2.json`.
+O launcher lê `updates-v2.json` do site. Ao publicar uma nova versão do aplicativo ou do mod, adicione o arquivo em `downloads/`, calcule o SHA-256, atualize a versão, a URL e o hash nos manifestos, e publique o commit. O manifesto legado `updates.json` continua sem oferecer patch do Family Coop ao launcher 0.5.0.
 
-Arte promocional de Hollow Knight: [Team Cherry](https://www.hollowknight.com/). A capa de BattleBlock Theater vem da biblioteca Steam. Este projeto é independente dos criadores dos jogos.
+O pacote `BattleBlock-mod-*.xml` descreve patches por hash do executável original. Builds não reconhecidos não são modificados. O código fonte do launcher está em `src/`.
+
+Arte promocional de Hollow Knight: [Team Cherry](https://www.hollowknight.com/). A capa de BattleBlock Theater vem da biblioteca Steam. Projeto independente dos criadores dos jogos.
