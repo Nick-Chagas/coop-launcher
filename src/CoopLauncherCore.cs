@@ -111,11 +111,13 @@ internal static class BattleBlockMod
     {
         if (string.IsNullOrEmpty(exe) || !File.Exists(exe)) return false;
         string backup = exe + BackupSuffix;
-        string original = File.Exists(backup) && Check(exe) == ModState.Installed ? backup : exe;
-        string hash = Hash(File.ReadAllBytes(original));
+        byte[] source = File.Exists(backup) && Check(exe) == ModState.Installed ? File.ReadAllBytes(backup) :
+            Check(exe) == ModState.Installed ? RecoverOriginal(File.ReadAllBytes(exe)) : File.ReadAllBytes(exe);
+        if (source == null) return false;
+        string hash = Hash(source);
         Patch[] patches;
         if (!PackagePatches.TryGetValue(hash, out patches)) return false;
-        Apply(File.ReadAllBytes(original), patches);
+        Apply(source, patches);
         PreparedLighting(exe);
         return true;
     }
@@ -124,7 +126,8 @@ internal static class BattleBlockMod
     {
         if (Check(exe) != ModState.Installed) return false;
         string backup = exe + BackupSuffix;
-        byte[] original = File.ReadAllBytes(backup);
+        byte[] original = File.Exists(backup) ? File.ReadAllBytes(backup) : RecoverOriginal(File.ReadAllBytes(exe));
+        if (original == null) return false;
         Patch[] patches;
         return PackagePatches.TryGetValue(Hash(original), out patches) &&
             File.ReadAllBytes(exe).SequenceEqual(Apply(original, patches)) && LightingInstalled(exe);
@@ -145,6 +148,7 @@ internal static class BattleBlockMod
             byte[] original = File.ReadAllBytes(backup);
             if (Supported(Hash(original)) && KnownPatched(original, current)) return ModState.Installed;
         }
+        if (RecoverOriginal(current) != null) return ModState.Installed;
         return ModState.Unsupported;
     }
 
@@ -199,14 +203,15 @@ internal static class BattleBlockMod
         if (Check(exe) != ModState.Installed) throw new InvalidOperationException("Patch ou backup diferente do esperado.");
         string backup = exe + BackupSuffix;
         string temp = exe + ".cooplauncher.tmp";
-        byte[] original = File.ReadAllBytes(backup);
+        byte[] original = File.Exists(backup) ? File.ReadAllBytes(backup) : RecoverOriginal(File.ReadAllBytes(exe));
+        if (original == null) throw new InvalidOperationException("Não foi possível recuperar o executável original.");
         try
         {
             RestoreLighting(exe);
             File.WriteAllBytes(temp, original);
             File.Replace(temp, exe, null);
             if (Hash(File.ReadAllBytes(exe)) != Hash(original)) throw new InvalidOperationException("Restauração não verificada; backup preservado.");
-            File.Delete(backup);
+            if (File.Exists(backup)) File.Delete(backup);
         }
         finally { if (File.Exists(temp)) File.Delete(temp); }
     }
@@ -223,7 +228,9 @@ internal static class BattleBlockMod
         string backup = path + ".cooplauncher-original.bak";
         if (!File.Exists(path)) throw new InvalidOperationException("Arquivo de iluminação não encontrado.");
         byte[] current = File.ReadAllBytes(path);
-        byte[] original = File.Exists(backup) ? File.ReadAllBytes(backup) : current;
+        byte[] original = File.Exists(backup) ? File.ReadAllBytes(backup) :
+            Hash(current) == LightingAsset.OriginalHash ? current : Reverse(current, LightingAsset.Patches);
+        if (original == null) throw new InvalidOperationException("Não foi possível recuperar a iluminação original.");
         if (Hash(original) != LightingAsset.OriginalHash)
             throw new InvalidOperationException("Versão do arquivo de iluminação não suportada.");
         byte[] patched = Apply(original, LightingAsset.Patches);
@@ -266,8 +273,10 @@ internal static class BattleBlockMod
     {
         string path = LightingPath(exe);
         string backup = path + ".cooplauncher-original.bak";
-        if (!File.Exists(backup)) return;
-        byte[] original = File.ReadAllBytes(backup);
+        if (!File.Exists(backup) && LightingAsset == null) return;
+        if (!File.Exists(backup) && Hash(File.ReadAllBytes(path)) == LightingAsset.OriginalHash) return;
+        byte[] original = File.Exists(backup) ? File.ReadAllBytes(backup) : Reverse(File.ReadAllBytes(path), LightingAsset.Patches);
+        if (original == null) throw new InvalidOperationException("Não foi possível recuperar a iluminação original.");
         if (LightingAsset != null && Hash(original) != LightingAsset.OriginalHash)
             throw new InvalidOperationException("Backup da iluminação inválido.");
         string temp = path + ".cooplauncher.tmp";
@@ -276,7 +285,7 @@ internal static class BattleBlockMod
             File.WriteAllBytes(temp, original);
             File.Replace(temp, path, null);
             if (!File.ReadAllBytes(path).SequenceEqual(original)) throw new InvalidOperationException("Falha ao restaurar iluminação.");
-            File.Delete(backup);
+            if (File.Exists(backup)) File.Delete(backup);
         }
         finally { if (File.Exists(temp)) File.Delete(temp); }
     }
@@ -303,6 +312,31 @@ internal static class BattleBlockMod
         if (PackagePatches.TryGetValue(hash, out patches) && current.SequenceEqual(Apply(original, patches))) return true;
         if (hash == OriginalHash && current.SequenceEqual(Apply(original, Patches))) return true;
         return hash == UpdatedHash && current.SequenceEqual(Apply(original, UpdatedPatches));
+    }
+
+    private static byte[] RecoverOriginal(byte[] current)
+    {
+        foreach (var build in PackagePatches)
+        {
+            byte[] recovered = Reverse(current, build.Value);
+            if (recovered != null && Hash(recovered) == build.Key) return recovered;
+        }
+        byte[] old = Reverse(current, Patches);
+        if (old != null && Hash(old) == OriginalHash) return old;
+        old = Reverse(current, UpdatedPatches);
+        return old != null && Hash(old) == UpdatedHash ? old : null;
+    }
+
+    private static byte[] Reverse(byte[] current, Patch[] patches)
+    {
+        byte[] recovered = (byte[])current.Clone();
+        foreach (Patch patch in patches)
+        {
+            if (patch.Offset > current.Length - patch.After.Length ||
+                !current.Skip(patch.Offset).Take(patch.After.Length).SequenceEqual(patch.After)) return null;
+            Buffer.BlockCopy(patch.Before, 0, recovered, patch.Offset, patch.Before.Length);
+        }
+        return recovered;
     }
 
     private static byte[] Apply(byte[] original, Patch[] patches)

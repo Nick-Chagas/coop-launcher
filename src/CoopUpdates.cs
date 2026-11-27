@@ -16,6 +16,8 @@ internal sealed class UpdateManifest
     public string familyVersion { get; set; }
     public string familyUrl { get; set; }
     public string familySha256 { get; set; }
+    public string familyFullUrl { get; set; }
+    public string familyFullSha256 { get; set; }
     public string battleVersion { get; set; }
     public string battleUrl { get; set; }
     public string battleSha256 { get; set; }
@@ -23,7 +25,7 @@ internal sealed class UpdateManifest
 
 internal static class CoopUpdates
 {
-    internal const string LauncherVersion = "0.6.2";
+    internal const string LauncherVersion = "0.6.3";
     private const string ManifestUrl = "https://nick-chagas.github.io/coop-launcher/updates-v3.json";
 
     internal static UpdateManifest FetchManifest()
@@ -57,8 +59,32 @@ internal static class CoopUpdates
 
     internal static string FamilyVersion()
     {
-        string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CoopLauncher", "family.version");
-        return File.Exists(path) ? File.ReadAllText(path).Trim() : "0.2.0";
+        return FamilyVersion(null);
+    }
+
+    internal static string FamilyVersion(string gameRoot)
+    {
+        if (!String.IsNullOrEmpty(gameRoot))
+        {
+            string profile = Path.Combine(gameRoot, "CoopProfiles", "family", "HollowKnightLocal8.dll");
+            string active = Path.Combine(gameRoot, "hollow_knight_Data", "Managed", "Mods", "HollowKnightLocal8", "HollowKnightLocal8.dll");
+            string installed = File.Exists(active) ? active : profile;
+            if (!File.Exists(installed)) return "0.0.0";
+            string hash = FileHash(installed);
+            if (hash == "8A36B2AF722DA4DCCA30F9031009EC4903C57B66FE6C99E7AC3EDA4C7394F8E9") return "0.2.1";
+            if (hash == FamilyBaseHash) return "0.2.0";
+            return "0.0.0";
+        }
+        return "0.0.0";
+    }
+
+    private const string FamilyBaseHash = "BCA3C4FA1AF1B5C9FBC562BD67CFD6E6207DF283F0FD6234DCA73512F2DEF434";
+
+    internal static string FileHash(string path)
+    {
+        using (var sha = SHA256.Create())
+        using (var input = File.OpenRead(path))
+            return BitConverter.ToString(sha.ComputeHash(input)).Replace("-", "");
     }
 
     internal static string BattleVersion()
@@ -158,6 +184,42 @@ internal static class CoopUpdates
                 File.WriteAllText(versionPath, manifest.familyVersion);
             }
             catch { File.Copy(backup, destination, true); throw; }
+        }
+        finally { File.Delete(downloaded); }
+    }
+
+    internal static void InstallFamilyFull(UpdateManifest manifest, string gameRoot)
+    {
+        if (Process.GetProcessesByName("hollow_knight").Length != 0)
+            throw new InvalidOperationException("Feche o Hollow Knight antes de instalar o mod.");
+        string managed = Path.Combine(gameRoot, "hollow_knight_Data", "Managed");
+        string profile = Path.Combine(gameRoot, "CoopProfiles", "family", "HollowKnightLocal8.dll");
+        string active = Path.Combine(managed, "Mods", "HollowKnightLocal8", "HollowKnightLocal8.dll");
+        if (!Directory.Exists(managed) || (!File.Exists(profile) && !File.Exists(active)))
+            throw new InvalidOperationException("Instale primeiro o Modding API do Hollow Knight e localize o mod existente.");
+        string downloaded = DownloadVerified(manifest.familyFullUrl, manifest.familyFullSha256);
+        string backupProfile = profile + ".previous";
+        string backupActive = active + ".previous";
+        bool hadProfile = File.Exists(profile), hadActive = File.Exists(active);
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(profile));
+            if (hadProfile) File.Copy(profile, backupProfile, true);
+            if (hadActive) File.Copy(active, backupActive, true);
+            File.Copy(downloaded, profile, true);
+            Directory.CreateDirectory(Path.GetDirectoryName(active));
+            File.Copy(downloaded, active, true);
+            if (!FileHash(profile).Equals(manifest.familyFullSha256, StringComparison.OrdinalIgnoreCase) ||
+                !FileHash(active).Equals(manifest.familyFullSha256, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidDataException("O mod copiado não corresponde ao download.");
+        }
+        catch
+        {
+            if (hadProfile && File.Exists(backupProfile)) File.Copy(backupProfile, profile, true);
+            else if (!hadProfile && File.Exists(profile)) File.Delete(profile);
+            if (hadActive && File.Exists(backupActive)) File.Copy(backupActive, active, true);
+            else if (!hadActive && File.Exists(active)) File.Delete(active);
+            throw;
         }
         finally { File.Delete(downloaded); }
     }
