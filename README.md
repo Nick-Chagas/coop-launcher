@@ -2,7 +2,7 @@
 
 Launcher de coop local para Windows, com BattleBlock Theater e Hollow Knight Family Coop.
 
-## Versão 0.6.0
+## Versão 0.6.1
 
 - Reconhece os builds 23591838 e 25916588 do BattleBlock Theater.
 - Corrige a abertura do executável selecionado, inclusive quando o jogo está em outra pasta.
@@ -13,7 +13,7 @@ Launcher de coop local para Windows, com BattleBlock Theater e Hollow Knight Fam
 
 ## Publicar atualizações
 
-O launcher lê `updates-v2.json` do site. Ao publicar uma nova versão do aplicativo ou do mod, adicione o arquivo com um nome novo em `downloads/`, calcule o SHA-256, atualize a versão, a URL e o hash nos manifestos, e publique o commit. O manifesto legado `updates.json` continua sem oferecer patch do Family Coop ao launcher 0.5.0.
+O launcher lê `updates-v3.json` do site. Ao publicar uma nova versão do aplicativo ou do mod, adicione o arquivo com um nome novo em `downloads/`, calcule o SHA-256, atualize a versão, a URL e o hash nos manifestos, e publique o commit. O manifesto legado `updates.json` continua sem oferecer patch do Family Coop ao launcher 0.5.0.
 
 O pacote `BattleBlock-mod-*.xml` descreve patches por hash do executável original. Builds não reconhecidos não são modificados. O código fonte do launcher está em `src/`.
 

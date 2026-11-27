@@ -88,7 +88,7 @@ internal static class CoopLauncherModern
         exploreNav.Click += (s, e) => ShowExplore();
         libraryNav.Click += (s, e) => ShowLibrary();
         Find<Button>("AboutNav").Click += (s, e) => MessageBox.Show(window,
-            "Coop Launcher 0.6.0\n\nAdicione um jogo, instale o mod compatível e use Atualizações para receber novas versões.",
+            "Coop Launcher 0.6.1\n\nAdicione um jogo, instale o mod compatível e use Atualizações para receber novas versões.",
             "Sobre o Coop Launcher", MessageBoxButton.OK, MessageBoxImage.Information);
         addButton.Click += (s, e) => AddToLibrary();
         Find<Button>("EmptyExploreButton").Click += (s, e) => ShowExplore();

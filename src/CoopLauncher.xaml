@@ -57,7 +57,7 @@
               <TextBlock Text="Escolha um jogo na biblioteca." TextWrapping="Wrap" Foreground="#ABBBC9" FontSize="12" Margin="0,7,0,0"/>
             </StackPanel>
           </Border>
-          <TextBlock Text="Coop Launcher 0.6.0" Foreground="#76889B" FontSize="11" Margin="9,0,0,0"/>
+          <TextBlock Text="Coop Launcher 0.6.1" Foreground="#76889B" FontSize="11" Margin="9,0,0,0"/>
         </StackPanel>
       </DockPanel>
     </Border>
