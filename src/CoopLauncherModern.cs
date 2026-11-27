@@ -20,6 +20,7 @@ internal static class CoopLauncherModern
     private static Button addButton;
     private static Button primary;
     private static Button restore;
+    private static Button battleOriginalButton;
     private static TextBlock gamePath;
     private static TextBlock statusTitle;
     private static TextBlock statusDetail;
@@ -64,6 +65,7 @@ internal static class CoopLauncherModern
         addButton = Find<Button>("AddButton");
         primary = Find<Button>("PrimaryButton");
         restore = Find<Button>("RestoreButton");
+        battleOriginalButton = Find<Button>("BattleOriginalButton");
         gamePath = Find<TextBlock>("GamePath");
         statusTitle = Find<TextBlock>("StatusTitle");
         statusDetail = Find<TextBlock>("StatusDetail");
@@ -88,13 +90,14 @@ internal static class CoopLauncherModern
         exploreNav.Click += (s, e) => ShowExplore();
         libraryNav.Click += (s, e) => ShowLibrary();
         Find<Button>("AboutNav").Click += (s, e) => MessageBox.Show(window,
-            "Coop Launcher 0.6.1\n\nAdicione um jogo, instale o mod compatível e use Atualizações para receber novas versões.",
+            "Coop Launcher 0.6.2\n\nAdicione um jogo, instale o mod compatível e use Atualizações para receber novas versões.",
             "Sobre o Coop Launcher", MessageBoxButton.OK, MessageBoxImage.Information);
         addButton.Click += (s, e) => AddToLibrary();
         Find<Button>("EmptyExploreButton").Click += (s, e) => ShowExplore();
         Find<Button>("ChooseGameButton").Click += (s, e) => ChooseGame();
         primary.Click += (s, e) => PrimaryAction();
         restore.Click += (s, e) => RestoreAction();
+        battleOriginalButton.Click += (s, e) => LaunchBattleOriginal();
         hollowAddButton.Click += (s, e) => AddHollowToLibrary();
         hollowPrimaryButton.Click += (s, e) => LaunchHollow("family");
         hollowOriginalButton.Click += (s, e) => LaunchHollow("original");
@@ -263,18 +266,24 @@ internal static class CoopLauncherModern
         try
         {
             string path = File.Exists(saved) ? File.ReadAllText(saved).Trim() : null;
-            if (HollowReady(path)) return path;
+            if (HollowGameExists(path)) return path;
         }
         catch { }
         string known = @"C:\Games\Hollow Knight - SteamGG.NET\Hollow Knight - SteamGG.NET\hollow_knight.exe";
-        return HollowReady(known) ? known : null;
+        return HollowGameExists(known) ? known : null;
+    }
+
+    private static bool HollowGameExists(string exe = null)
+    {
+        exe = exe ?? hollowExe;
+        return !string.IsNullOrEmpty(exe) && File.Exists(exe) &&
+            string.Equals(Path.GetFileName(exe), "hollow_knight.exe", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool HollowReady(string exe = null)
     {
         exe = exe ?? hollowExe;
-        if (string.IsNullOrEmpty(exe) || !File.Exists(exe) ||
-            !string.Equals(Path.GetFileName(exe), "hollow_knight.exe", StringComparison.OrdinalIgnoreCase)) return false;
+        if (!HollowGameExists(exe)) return false;
         string folder = Path.GetDirectoryName(exe);
         return File.Exists(Path.Combine(folder, "Escolher-Hollow-Knight.ps1")) &&
             File.Exists(Path.Combine(folder, "Adicionar-Skin.cmd")) &&
@@ -285,7 +294,7 @@ internal static class CoopLauncherModern
     {
         try
         {
-            if (!HollowReady()) { ChooseHollow(); if (!HollowReady()) return; }
+            if (!HollowGameExists()) { ChooseHollow(); if (!HollowGameExists()) return; }
             Directory.CreateDirectory(ConfigDirectory());
             File.WriteAllText(Path.Combine(ConfigDirectory(), "hollowknight.path"), hollowExe);
             File.WriteAllText(Path.Combine(ConfigDirectory(), "hollowknight.added"), "1");
@@ -302,7 +311,7 @@ internal static class CoopLauncherModern
         var dialog = new OpenFileDialog { Title = "Escolha hollow_knight.exe", Filter = "Hollow Knight (hollow_knight.exe)|hollow_knight.exe|Executáveis (*.exe)|*.exe" };
         if (dialog.ShowDialog(window) != true) return;
         hollowExe = dialog.FileName;
-        if (HollowReady())
+        if (HollowGameExists())
         {
             Directory.CreateDirectory(ConfigDirectory());
             File.WriteAllText(Path.Combine(ConfigDirectory(), "hollowknight.path"), hollowExe);
@@ -314,14 +323,16 @@ internal static class CoopLauncherModern
     private static void RefreshHollow()
     {
         bool ready = HollowReady();
+        bool gameExists = HollowGameExists();
         hollowLibraryGame.Visibility = hollowAdded ? Visibility.Visible : Visibility.Collapsed;
         hollowAddButton.Content = hollowAdded ? "Abrir" : "＋  Adicionar";
         hollowGamePath.Text = string.IsNullOrEmpty(hollowExe) ? "Jogo ainda não escolhido" : hollowExe;
-        hollowPrimaryButton.Content = ready ? "▶  Jogar Family Coop" : "Escolher .exe";
-        hollowOriginalButton.IsEnabled = ready;
+        hollowPrimaryButton.Content = ready ? "▶  Jogar com Family Coop" : "Family Coop indisponível";
+        hollowPrimaryButton.IsEnabled = ready;
+        hollowOriginalButton.IsEnabled = gameExists;
         hollowSkinButton.IsEnabled = ready;
-        hollowStatusTitle.Text = ready ? "Mod encontrado" : "Configuração necessária";
-        hollowStatusDetail.Text = ready ? "Family Coop e jogo original disponíveis." : "Escolha a pasta do Hollow Knight com o Family Coop instalado.";
+        hollowStatusTitle.Text = ready ? "Mod encontrado" : gameExists ? "Jogo original disponível" : "Localize o jogo";
+        hollowStatusDetail.Text = ready ? "Family Coop e jogo original disponíveis." : gameExists ? "Você já pode jogar sem mod. Family Coop ainda não está instalado." : "Escolha o executável do Hollow Knight.";
         hollowModBadge.Text = ready ? "MOD INSTALADO · V" + CoopUpdates.FamilyVersion() : "MOD DISPONÍVEL";
     }
 
@@ -329,7 +340,14 @@ internal static class CoopLauncherModern
     {
         try
         {
-            if (!HollowReady()) { ChooseHollow(); return; }
+            if (!HollowGameExists()) { ChooseHollow(); return; }
+            if (mode == "original" && !HollowReady())
+            {
+                Process.Start(new ProcessStartInfo(hollowExe) { WorkingDirectory = Path.GetDirectoryName(hollowExe) });
+                return;
+            }
+            if (!HollowReady())
+                throw new InvalidOperationException("Instale o Family Coop para jogar neste modo.");
             string script = Path.Combine(Path.GetDirectoryName(hollowExe), "Escolher-Hollow-Knight.ps1");
             var start = new ProcessStartInfo("powershell.exe",
                 "-NoProfile -ExecutionPolicy Bypass -STA -File \"" + script + "\" -Mode " + mode);
@@ -449,10 +467,11 @@ internal static class CoopLauncherModern
         gamePath.Text = string.IsNullOrEmpty(selectedExe) ? "Executável ainda não escolhido" : selectedExe;
         battleModVersion.Text = state == ModState.Installed ? "Mod v" + CoopUpdates.BattleVersion() + " ativo" : "Campanha coop local";
         restore.Visibility = state == ModState.Installed ? Visibility.Visible : Visibility.Collapsed;
+        battleOriginalButton.IsEnabled = state == ModState.Original || state == ModState.Installed;
         switch (state)
         {
             case ModState.Installed:
-                primary.Content = "▶   Jogar agora";
+                primary.Content = "▶   Jogar com nosso mod";
                 statusTitle.Text = "Pronto para jogar";
                 statusDetail.Text = "Mod v" + CoopUpdates.BattleVersion() + " ativo. Pronto para abrir o jogo.";
                 statusDot.Fill = Brush("#80DCC1");
@@ -502,5 +521,18 @@ internal static class CoopLauncherModern
     {
         try { BattleBlockMod.Restore(selectedExe); Refresh(); }
         catch (Exception ex) { MessageBox.Show(window, ex.Message, "Coop Launcher", MessageBoxButton.OK, MessageBoxImage.Warning); Refresh(); }
+    }
+
+    private static void LaunchBattleOriginal()
+    {
+        try
+        {
+            if (state == ModState.Installed) BattleBlockMod.Restore(selectedExe);
+            if (BattleBlockMod.Check(selectedExe) != ModState.Original)
+                throw new InvalidOperationException("O jogo original não pôde ser confirmado.");
+            Refresh();
+            Process.Start(new ProcessStartInfo(selectedExe) { WorkingDirectory = Path.GetDirectoryName(selectedExe) });
+        }
+        catch (Exception ex) { MessageBox.Show(window, ex.Message, "BattleBlock Theater", MessageBoxButton.OK, MessageBoxImage.Warning); Refresh(); }
     }
 }

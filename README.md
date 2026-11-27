@@ -2,7 +2,7 @@
 
 Launcher de coop local para Windows, com BattleBlock Theater e Hollow Knight Family Coop.
 
-## Versão 0.6.1
+## Versão 0.6.2
 
 - Reconhece os builds 23591838 e 25916588 do BattleBlock Theater.
 - Corrige a abertura do executável selecionado, inclusive quando o jogo está em outra pasta.
