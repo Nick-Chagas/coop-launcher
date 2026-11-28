@@ -1,10 +1,14 @@
 # Coop Launcher
 
-Launcher de coop local para Windows, com BattleBlock Theater e Hollow Knight Family Coop.
+Launcher de coop local para Windows, com BattleBlock Theater, Hollow Knight Family Coop e Rhythm Doctor.
 
-## Versão 0.6.4
+## Versão 0.7.0
 
-- O executável inclui o pacote do mod BattleBlock 1.3.0 e a DLL Family Coop 0.2.1. A primeira instalação desses mods funciona sem baixar o arquivo do mod.
+- Rhythm Doctor: o app inclui o mod Pulso em Equipe 0.4.0 e permite instalar, atualizar, jogar com mod ou abrir o jogo original.
+- No jogo, F6 abre as configurações de 1 a 4 jogadores, controles, personagens e escolha entre o coração de cima e o de baixo. Com 3 jogadores a divisão é 2+1; com 4, 2+2. Os jogadores no mesmo coração precisam acertar o pulso juntos.
+- Os retratos são carregados dos arquivos do jogo instalado, sem redistribuir as imagens do jogo neste repositório.
+
+- O executável inclui o pacote do mod BattleBlock 1.3.0, a DLL Family Coop 0.2.1 e o pacote Rhythm Doctor. A primeira instalação desses mods funciona sem baixar o arquivo do mod.
 - O botão Atualizar continua buscando versões futuras no servidor.
 - Detecta o mod BattleBlock instalado mesmo quando o backup antigo não está na pasta; só recupera arquivos quando os hashes originais conferem.
 - O botão de atualização do BattleBlock baixa o pacote mesmo quando a versão do pacote já está em cache.
@@ -18,7 +22,7 @@ Launcher de coop local para Windows, com BattleBlock Theater e Hollow Knight Fam
 
 ## Publicar atualizações
 
-O launcher lê `updates-v3.json` do site. Ao publicar uma nova versão do aplicativo ou do mod, adicione o arquivo com um nome novo em `downloads/`, calcule o SHA-256, atualize a versão, a URL e o hash nos manifestos, e publique o commit. O manifesto legado `updates.json` continua sem oferecer patch do Family Coop ao launcher 0.5.0.
+O launcher lê `updates-v3.json` do site. Ao publicar uma nova versão do aplicativo ou do mod, adicione o arquivo com um nome novo em `downloads/`, calcule o SHA-256, atualize a versão, a URL e o hash no manifesto, e publique o commit. O manifesto legado `updates.json` continua sem oferecer patch do Family Coop ao launcher 0.5.0.
 
 O pacote `BattleBlock-mod-*.xml` descreve patches por hash do executável original. Builds não reconhecidos não são modificados. O código fonte do launcher está em `src/`.
 

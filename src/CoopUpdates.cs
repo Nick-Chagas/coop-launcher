@@ -22,11 +22,15 @@ internal sealed class UpdateManifest
     public string battleVersion { get; set; }
     public string battleUrl { get; set; }
     public string battleSha256 { get; set; }
+    public string rhythmVersion { get; set; }
+    public string rhythmUrl { get; set; }
+    public string rhythmSha256 { get; set; }
+    public string rhythmPluginSha256 { get; set; }
 }
 
 internal static class CoopUpdates
 {
-    internal const string LauncherVersion = "0.6.4";
+    internal const string LauncherVersion = "0.7.0";
     private const string ManifestUrl = "https://nick-chagas.github.io/coop-launcher/updates-v3.json";
 
     internal static UpdateManifest FetchManifest()
@@ -216,6 +220,17 @@ internal static class CoopUpdates
     {
         string downloaded = DownloadVerified(manifest.familyFullUrl, manifest.familyFullSha256);
         try { InstallFamilyBytes(File.ReadAllBytes(downloaded), manifest.familyFullSha256, gameRoot); }
+        finally { File.Delete(downloaded); }
+    }
+
+    internal static void UpdateRhythm(UpdateManifest manifest, string exe)
+    {
+        if (!ValidAsset(manifest.rhythmUrl, manifest.rhythmSha256) ||
+            !System.Text.RegularExpressions.Regex.IsMatch(manifest.rhythmPluginSha256 ?? "", "^[a-fA-F0-9]{64}$"))
+            throw new InvalidDataException("Pacote do Rhythm Doctor inválido no manifesto.");
+        string downloaded = DownloadVerified(manifest.rhythmUrl, manifest.rhythmSha256);
+        try { RhythmDoctorMod.InstallPackage(exe, File.ReadAllBytes(downloaded), manifest.rhythmSha256,
+            manifest.rhythmVersion, manifest.rhythmPluginSha256); }
         finally { File.Delete(downloaded); }
     }
 

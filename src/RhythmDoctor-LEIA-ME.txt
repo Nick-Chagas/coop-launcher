@@ -1,0 +1,32 @@
+PULSO EM EQUIPE PARA RHYTHM DOCTOR
+
+Cada pessoa joga ao mesmo tempo na mesma música. Você pode escolher 1, 2, 3
+ou 4 jogadores. No teclado, o padrão é D, F, J e K, uma tecla por pessoa.
+Também aceita botões de controles conectados.
+Na aba CORAÇÕES do menu do jogo, cada pessoa escolhe o coração de cima ou de
+baixo. Com 4 pessoas ficam 2 em cada; com 3, uma dupla e uma pessoa. Cada
+coração recebe os comandos do seu grupo; quem divide um coração precisa
+apertar junto perto do pulso. Em músicas com apenas um coração, todos jogam
+juntos nesse coração.
+
+F6: abre o menu para conectar cada tecla ou controle, testar as entradas,
+escolher o coração e o retrato de cada jogador entre personagens do jogo.
+F8: alterna entre 1, 2, 3 e 4 pessoas (o padrão é 4).
+F7: liga ou desliga o mod. Desligado, o jogo usa os controles originais.
+
+Para instalar em outro PC:
+1. Extraia esta pasta inteira.
+2. Feche o Rhythm Doctor.
+3. Abra Instalar.bat com dois cliques.
+4. Se o jogo não estiver em C:\Games\Rhythm Doctor, escolha o executável
+   quando solicitado.
+
+Testado com a instalação local Rhythm Doctor 1.0.0 / Unity 2022.3 e
+BepInEx 5.4.23.6. Outros builds podem exigir atualização.
+
+O mod não cria personagens extras nas cenas: os comandos de 1 a 4 pessoas
+alimentam a mesma partida de Rhythm Doctor. Os retratos escolhidos aparecem
+no painel de cada jogador durante a música.
+
+O pacote inclui BepInEx 5.4.23.6. A licença está em
+Arquivos\LICENSE-BepInEx.txt; código fonte em github.com/BepInEx/BepInEx.

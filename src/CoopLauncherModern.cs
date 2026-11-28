@@ -28,6 +28,12 @@ internal static class CoopLauncherModern
     private static FrameworkElement emptyLibrary;
     private static FrameworkElement libraryGame;
     private static FrameworkElement hollowLibraryGame;
+    private static FrameworkElement rhythmLibraryGame;
+    private static Button rhythmPrimaryButton;
+    private static Button rhythmUpdateButton;
+    private static Button rhythmOriginalButton;
+    private static TextBlock rhythmStatus;
+    private static TextBlock rhythmGamePath;
     private static Button hollowAddButton;
     private static Button hollowPrimaryButton;
     private static Button hollowSkinButton;
@@ -43,8 +49,10 @@ internal static class CoopLauncherModern
     private static TextBlock battleModVersion;
     private static string selectedExe;
     private static string hollowExe;
+    private static string rhythmExe;
     private static bool added;
     private static bool hollowAdded;
+    private static bool rhythmAdded;
     private static ModState state;
 
     [STAThread]
@@ -73,6 +81,7 @@ internal static class CoopLauncherModern
         emptyLibrary = Find<FrameworkElement>("EmptyLibrary");
         libraryGame = Find<FrameworkElement>("LibraryGame");
         hollowLibraryGame = Find<FrameworkElement>("HollowLibraryGame");
+        rhythmLibraryGame = Find<FrameworkElement>("RhythmLibraryGame");
         hollowAddButton = Find<Button>("HollowAddButton");
         hollowPrimaryButton = Find<Button>("HollowPrimaryButton");
         hollowSkinButton = Find<Button>("HollowSkinButton");
@@ -86,11 +95,16 @@ internal static class CoopLauncherModern
         hollowStatusDetail = Find<TextBlock>("HollowStatusDetail");
         hollowModBadge = Find<TextBlock>("HollowModBadge");
         battleModVersion = Find<TextBlock>("BattleModVersion");
+        rhythmPrimaryButton = Find<Button>("RhythmPrimaryButton");
+        rhythmUpdateButton = Find<Button>("RhythmUpdateButton");
+        rhythmOriginalButton = Find<Button>("RhythmOriginalButton");
+        rhythmStatus = Find<TextBlock>("RhythmStatus");
+        rhythmGamePath = Find<TextBlock>("RhythmGamePath");
         LoadArtwork();
         exploreNav.Click += (s, e) => ShowExplore();
         libraryNav.Click += (s, e) => ShowLibrary();
         Find<Button>("AboutNav").Click += (s, e) => MessageBox.Show(window,
-            "Coop Launcher 0.6.4\n\nAdicione um jogo, instale o mod compatível e use Atualizações para receber novas versões.",
+            "Coop Launcher 0.7.0\n\nAdicione um jogo, instale o mod compatível e use Atualizações para receber novas versões.",
             "Sobre o Coop Launcher", MessageBoxButton.OK, MessageBoxImage.Information);
         addButton.Click += (s, e) => AddToLibrary();
         Find<Button>("EmptyExploreButton").Click += (s, e) => ShowExplore();
@@ -105,6 +119,11 @@ internal static class CoopLauncherModern
         hollowUpdateButton.Click += (s, e) => HollowModAction();
         battleUpdateButton.Click += (s, e) => CheckUpdates(true, false, true);
         Find<Button>("HollowChooseButton").Click += (s, e) => ChooseHollow();
+        Find<Button>("RhythmAddButton").Click += (s, e) => AddRhythmToLibrary();
+        Find<Button>("RhythmChooseButton").Click += (s, e) => ChooseRhythm();
+        rhythmPrimaryButton.Click += (s, e) => RhythmPrimaryAction();
+        rhythmOriginalButton.Click += (s, e) => LaunchRhythm(false);
+        rhythmUpdateButton.Click += (s, e) => RhythmModAction();
         updatesButton.Click += (s, e) => CheckUpdates(true);
         selectedExe = LoadSavedPath();
         if (string.IsNullOrEmpty(selectedExe) || !File.Exists(selectedExe)) selectedExe = DefaultSteamPath();
@@ -112,9 +131,11 @@ internal static class CoopLauncherModern
         added = LoadAdded();
         hollowExe = LoadHollowPath();
         hollowAdded = File.Exists(Path.Combine(ConfigDirectory(), "hollowknight.added"));
+        rhythmExe = LoadRhythmPath();
+        rhythmAdded = File.Exists(Path.Combine(ConfigDirectory(), "rhythmdoctor.added"));
         Refresh();
         if (hollowAdded && HollowReady()) CreateHollowShortcuts();
-        if (added || hollowAdded) ShowLibrary(); else ShowExplore();
+        if (added || hollowAdded || rhythmAdded) ShowLibrary(); else ShowExplore();
         window.ContentRendered += (s, e) => CheckUpdates(false);
         app.Run(window);
     }
@@ -171,6 +192,7 @@ internal static class CoopLauncherModern
         updatesButton.IsEnabled = false;
         hollowUpdateButton.IsEnabled = false;
         battleUpdateButton.IsEnabled = false;
+        rhythmUpdateButton.IsEnabled = false;
         updatesStatus.Text = "Buscando versões...";
         System.Threading.Tasks.Task.Run(() =>
         {
@@ -182,6 +204,7 @@ internal static class CoopLauncherModern
                     updatesButton.IsEnabled = true;
                     hollowUpdateButton.IsEnabled = true;
                     battleUpdateButton.IsEnabled = true;
+                    rhythmUpdateButton.IsEnabled = RhythmDoctorMod.Exists(rhythmExe);
                     bool appUpdate = !familyOnly && !battleOnly && CoopUpdates.IsNewer(manifest.launcherVersion, CoopUpdates.LauncherVersion) && CoopUpdates.ValidAsset(manifest.launcherUrl, manifest.launcherSha256);
                     bool modUpdate = !battleOnly && HollowGameExists() && HollowModPresent() &&
                         CoopUpdates.ValidAsset(manifest.familyFullUrl, manifest.familyFullSha256) &&
@@ -190,7 +213,12 @@ internal static class CoopLauncherModern
                         CoopUpdates.ValidAsset(manifest.battleUrl, manifest.battleSha256) &&
                         ((manual && battleOnly) || (state == ModState.Installed &&
                         (CoopUpdates.IsNewer(manifest.battleVersion, CoopUpdates.BattleVersion()) || !BattleBlockMod.LatestInstalled(selectedExe))));
-                    updatesStatus.Text = appUpdate || modUpdate || battleUpdate ? "Atualização disponível" : "Tudo atualizado";
+                    string installedRhythm = RhythmDoctorMod.InstalledVersion(rhythmExe);
+                    bool rhythmUpdate = !familyOnly && !battleOnly && rhythmAdded &&
+                        installedRhythm != "0.0.0" && installedRhythm != "outra versão" &&
+                        CoopUpdates.ValidAsset(manifest.rhythmUrl, manifest.rhythmSha256) &&
+                        CoopUpdates.IsNewer(manifest.rhythmVersion, installedRhythm);
+                    updatesStatus.Text = appUpdate || modUpdate || battleUpdate || rhythmUpdate ? "Atualização disponível" : "Tudo atualizado";
                     if (appUpdate && MessageBox.Show(window, "Nova versão do Coop Launcher: " + manifest.launcherVersion + ". Atualizar agora?", "Atualização do app", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
                     {
                         InstallUpdate(() => CoopUpdates.UpdateLauncher(manifest));
@@ -200,7 +228,9 @@ internal static class CoopLauncherModern
                         InstallUpdate(() => CoopUpdates.InstallFamilyFull(manifest, Path.GetDirectoryName(hollowExe)));
                     if (battleUpdate && MessageBox.Show(window, "Nova versão do mod BattleBlock: " + manifest.battleVersion + ". Atualizar agora?", "Atualização do mod", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
                         InstallUpdate(() => CoopUpdates.UpdateBattle(manifest, selectedExe));
-                    else if (manual && !appUpdate && !modUpdate && !battleUpdate) MessageBox.Show(window, familyOnly && !HollowModPresent() ? "Não encontrei o mod do Hollow Knight nessa instalação. Confira o caminho do jogo e o Modding API." : "Nenhuma atualização publicada no momento.", "Coop Launcher", MessageBoxButton.OK, MessageBoxImage.Information);
+                    if (rhythmUpdate && MessageBox.Show(window, "Nova versão do Pulso em Equipe: " + manifest.rhythmVersion + ". Feche o jogo e atualize agora?", "Atualização do mod", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+                        InstallUpdate(() => CoopUpdates.UpdateRhythm(manifest, rhythmExe));
+                    if (manual && !appUpdate && !modUpdate && !battleUpdate && !rhythmUpdate) MessageBox.Show(window, familyOnly && !HollowModPresent() ? "Não encontrei o mod do Hollow Knight nessa instalação. Confira o caminho do jogo e o Modding API." : "Nenhuma atualização publicada no momento.", "Coop Launcher", MessageBoxButton.OK, MessageBoxImage.Information);
                 }));
             }
             catch (Exception ex)
@@ -210,6 +240,7 @@ internal static class CoopLauncherModern
                     updatesButton.IsEnabled = true;
                     hollowUpdateButton.IsEnabled = true;
                     battleUpdateButton.IsEnabled = true;
+                    rhythmUpdateButton.IsEnabled = RhythmDoctorMod.Exists(rhythmExe);
                     updatesStatus.Text = "Sem conexão com o servidor";
                     if (manual) MessageBox.Show(window, ex.Message, "Verificar atualizações", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }));
@@ -223,6 +254,7 @@ internal static class CoopLauncherModern
         updatesButton.IsEnabled = false;
         hollowUpdateButton.IsEnabled = false;
         battleUpdateButton.IsEnabled = false;
+        rhythmUpdateButton.IsEnabled = false;
         System.Threading.Tasks.Task.Run(() =>
         {
             try
@@ -234,8 +266,9 @@ internal static class CoopLauncherModern
                     updatesButton.IsEnabled = true;
                     hollowUpdateButton.IsEnabled = true;
                     battleUpdateButton.IsEnabled = true;
+                    rhythmUpdateButton.IsEnabled = RhythmDoctorMod.Exists(rhythmExe);
                     Refresh();
-                    MessageBox.Show(window, "Atualização instalada. Se o app foi atualizado, ele vai reiniciar.", "Coop Launcher", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(window, "Pacote instalado. Abra o jogo para usar a versão nova.", "Coop Launcher", MessageBoxButton.OK, MessageBoxImage.Information);
                 }));
             }
             catch (Exception ex)
@@ -245,6 +278,7 @@ internal static class CoopLauncherModern
                     updatesButton.IsEnabled = true;
                     hollowUpdateButton.IsEnabled = true;
                     battleUpdateButton.IsEnabled = true;
+                    rhythmUpdateButton.IsEnabled = RhythmDoctorMod.Exists(rhythmExe);
                     updatesStatus.Text = "Falha na atualização";
                     MessageBox.Show(window, ex.Message, "Atualização", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }));
@@ -547,6 +581,131 @@ internal static class CoopLauncherModern
                 break;
         }
         RefreshHollow();
+        RefreshRhythm();
+    }
+
+    private static string LoadRhythmPath()
+    {
+        string saved = Path.Combine(ConfigDirectory(), "rhythmdoctor.path");
+        try
+        {
+            if (File.Exists(saved) && RhythmDoctorMod.Exists(File.ReadAllText(saved).Trim()))
+                return File.ReadAllText(saved).Trim();
+        }
+        catch { }
+        string local = @"C:\Games\Rhythm Doctor\Rhythm Doctor.exe";
+        return RhythmDoctorMod.Exists(local) ? local : null;
+    }
+
+    private static void AddRhythmToLibrary()
+    {
+        if (!RhythmDoctorMod.Exists(rhythmExe)) ChooseRhythm();
+        if (!RhythmDoctorMod.Exists(rhythmExe)) return;
+        Directory.CreateDirectory(ConfigDirectory());
+        File.WriteAllText(Path.Combine(ConfigDirectory(), "rhythmdoctor.path"), rhythmExe);
+        File.WriteAllText(Path.Combine(ConfigDirectory(), "rhythmdoctor.added"), "1");
+        rhythmAdded = true;
+        Refresh();
+        ShowLibrary();
+    }
+
+    private static void ChooseRhythm()
+    {
+        var dialog = new OpenFileDialog { Title = "Escolha Rhythm Doctor.exe",
+            Filter = "Rhythm Doctor|Rhythm Doctor.exe|Executáveis (*.exe)|*.exe" };
+        if (dialog.ShowDialog(window) != true) return;
+        if (!RhythmDoctorMod.Exists(dialog.FileName))
+        {
+            MessageBox.Show(window, "Selecione Rhythm Doctor.exe.", "Rhythm Doctor", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        rhythmExe = dialog.FileName;
+        Directory.CreateDirectory(ConfigDirectory());
+        File.WriteAllText(Path.Combine(ConfigDirectory(), "rhythmdoctor.path"), rhythmExe);
+        Refresh();
+    }
+
+    private static void RefreshRhythm()
+    {
+        bool found = RhythmDoctorMod.Exists(rhythmExe);
+        string version = found ? RhythmDoctorMod.InstalledVersion(rhythmExe) : "0.0.0";
+        rhythmLibraryGame.Visibility = rhythmAdded ? Visibility.Visible : Visibility.Collapsed;
+        Find<Button>("RhythmAddButton").Content = rhythmAdded ? "Abrir" : "＋  Adicionar";
+        rhythmGamePath.Text = found ? rhythmExe : "Jogo ainda não localizado";
+        bool latest = version != "0.0.0" && version != "outra versão" &&
+            !CoopUpdates.IsNewer(RhythmDoctorMod.Version, version);
+        rhythmStatus.Text = !found ? "Localize o jogo para instalar o mod incluído." :
+            latest ? "Pulso em Equipe v" + version + " instalado · pronto para jogar." :
+            version == "0.0.0" ? "Jogo encontrado · instale o mod incluído." :
+            "Atualização do Pulso em Equipe disponível no app.";
+        rhythmPrimaryButton.Content = !found ? "Localizar jogo" :
+            latest ? "▶  Jogar com mod" : "↓  Instalar mod incluído";
+        rhythmOriginalButton.IsEnabled = found;
+        rhythmUpdateButton.IsEnabled = found;
+
+    }
+
+    private static void RhythmPrimaryAction()
+    {
+        if (!RhythmDoctorMod.Exists(rhythmExe)) { ChooseRhythm(); return; }
+        string installed = RhythmDoctorMod.InstalledVersion(rhythmExe);
+        if (installed == "0.0.0" || installed == "outra versão" ||
+            CoopUpdates.IsNewer(RhythmDoctorMod.Version, installed))
+        {
+            InstallUpdate(() => RhythmDoctorMod.InstallBundled(rhythmExe));
+            return;
+        }
+        LaunchRhythm(true);
+    }
+
+    private static void LaunchRhythm(bool withMod)
+    {
+        try { RhythmDoctorMod.Launch(rhythmExe, withMod); RefreshRhythm(); }
+        catch (Exception ex) { MessageBox.Show(window, ex.Message, "Rhythm Doctor", MessageBoxButton.OK, MessageBoxImage.Warning); }
+    }
+
+    private static void RhythmModAction()
+    {
+        if (!RhythmDoctorMod.Exists(rhythmExe)) { ChooseRhythm(); return; }
+        string installed = RhythmDoctorMod.InstalledVersion(rhythmExe);
+        if (installed == "0.0.0" || installed == "outra versão" ||
+            CoopUpdates.IsNewer(RhythmDoctorMod.Version, installed))
+        {
+            InstallUpdate(() => RhythmDoctorMod.InstallBundled(rhythmExe));
+            return;
+        }
+        rhythmUpdateButton.IsEnabled = false;
+        updatesStatus.Text = "Buscando versões...";
+        System.Threading.Tasks.Task.Run(() =>
+        {
+            try
+            {
+                UpdateManifest manifest = CoopUpdates.FetchManifest();
+                window.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    rhythmUpdateButton.IsEnabled = true;
+                    if (CoopUpdates.ValidAsset(manifest.rhythmUrl, manifest.rhythmSha256) &&
+                        CoopUpdates.IsNewer(manifest.rhythmVersion, installed))
+                        InstallUpdate(() => CoopUpdates.UpdateRhythm(manifest, rhythmExe));
+                    else
+                    {
+                        updatesStatus.Text = "Tudo atualizado";
+                        MessageBox.Show(window, "Pulso em Equipe já está atualizado.", "Rhythm Doctor",
+                            MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                }));
+            }
+            catch (Exception ex)
+            {
+                window.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    rhythmUpdateButton.IsEnabled = true;
+                    updatesStatus.Text = "Sem conexão com o servidor";
+                    MessageBox.Show(window, ex.Message, "Atualizar Pulso em Equipe",
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                }));
+            }
+        });
     }
 
     private static SolidColorBrush Brush(string color)

@@ -62,7 +62,7 @@
               <TextBlock Text="Escolha um jogo na biblioteca." TextWrapping="Wrap" Foreground="#ABBBC9" FontSize="12" Margin="0,7,0,0"/>
             </StackPanel>
           </Border>
-          <TextBlock Text="Coop Launcher 0.6.4" Foreground="#76889B" FontSize="11" Margin="9,0,0,0"/>
+          <TextBlock Text="Coop Launcher 0.7.0" Foreground="#76889B" FontSize="11" Margin="9,0,0,0"/>
         </StackPanel>
       </DockPanel>
     </Border>
@@ -98,6 +98,17 @@
               </Grid>
             </Border>
           </Grid>
+
+          <Border Background="#1D1933" BorderBrush="#654B83" BorderThickness="1" CornerRadius="16" Margin="0,16,0,0" Padding="22">
+            <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+              <StackPanel>
+                <TextBlock Text="NOVO MOD · 1 A 4 JOGADORES" Foreground="#6FE4E9" FontSize="10" FontWeight="Bold"/>
+                <TextBlock Text="Rhythm Doctor" FontSize="24" FontWeight="Bold" Margin="0,6,0,0"/>
+                <TextBlock Text="Pulso em Equipe · todos jogam a mesma música" Foreground="#C2B6D4" FontSize="13" Margin="0,5,0,0"/>
+              </StackPanel>
+              <Button x:Name="RhythmAddButton" Grid.Column="1" Style="{StaticResource AccentButton}" Content="＋  Adicionar" VerticalAlignment="Center" Margin="18,0,0,0"/>
+            </Grid>
+          </Border>
 
         </StackPanel>
       </ScrollViewer>
@@ -139,6 +150,24 @@
                   <TextBlock x:Name="HollowGamePath" Foreground="#768B9C" FontSize="11" TextWrapping="Wrap" Margin="0,6,0,0"/></StackPanel>
                 <Button x:Name="HollowChooseButton" Grid.Column="1" Style="{StaticResource SoftButton}" Content="Localizar jogo" VerticalAlignment="Center" Margin="15,0,0,0"/>
               </Grid>
+            </Border>
+          </StackPanel>
+
+          <StackPanel x:Name="RhythmLibraryGame" Visibility="Collapsed" Margin="0,16,0,0">
+            <Border Background="#1C1931" BorderBrush="#655384" BorderThickness="1" CornerRadius="16" Padding="24">
+              <StackPanel>
+                <TextBlock Text="PULSO EM EQUIPE" Foreground="#6FE4E9" FontSize="11" FontWeight="Bold"/>
+                <TextBlock Text="Rhythm Doctor" FontSize="27" FontWeight="Bold" Margin="0,6,0,0"/>
+                <TextBlock x:Name="RhythmStatus" Text="Localize o jogo para instalar o mod incluído." Foreground="#B9B8D0" FontSize="13" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                <TextBlock x:Name="RhythmGamePath" Foreground="#8E91AC" FontSize="11" Margin="0,7,0,18" TextWrapping="Wrap"/>
+                <TextBlock Text="Abra o jogo e pressione F6 para escolher jogadores, personagens e controles." Foreground="#9DA9C3" FontSize="12" Margin="0,0,0,18" TextWrapping="Wrap"/>
+                <WrapPanel>
+                  <Button x:Name="RhythmPrimaryButton" Style="{StaticResource AccentButton}" Content="↓  Instalar mod incluído" Margin="0,0,8,8"/>
+                  <Button x:Name="RhythmOriginalButton" Style="{StaticResource ModeButton}" Content="▶  Jogar sem mod" Margin="0,0,8,8"/>
+                  <Button x:Name="RhythmUpdateButton" Style="{StaticResource SoftButton}" Content="↻  Atualizar mod" Margin="0,0,8,8"/>
+                  <Button x:Name="RhythmChooseButton" Style="{StaticResource SoftButton}" Content="Localizar jogo" Margin="0,0,0,8"/>
+                </WrapPanel>
+              </StackPanel>
             </Border>
           </StackPanel>
 
